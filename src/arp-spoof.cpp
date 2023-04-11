@@ -1,4 +1,4 @@
-#include "send-arp.h"
+#include "arp-spoof.h"
 
 void getAttackerInfo(string interface, Mac& attackerMac, Ip& attackerIp ) {
     //get Mac Address
@@ -45,7 +45,7 @@ void sendARPPacket(pcap_t* handle, Mac& eth_dmac, Mac& eth_smac, Mac& arp_smac, 
 	}
 }
 
-void getSenderMAC(pcap_t* handle, Mac& senderMac, Ip& senderIp, Mac& attackerMac, Ip& attackerIp) {
+void getMACAddress(pcap_t* handle, Mac& senderMac, Ip& senderIp, Mac& attackerMac, Ip& attackerIp) {
     Mac broadcastMac = Mac("FF:FF:FF:FF:FF:FF");
     Mac nullMac = Mac("00:00:00:00:00:00");
     
