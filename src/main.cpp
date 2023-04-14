@@ -49,13 +49,13 @@ int main(int argc, char* argv[]) {
 			cout <<"["<< i << "] Setting Target IP to: " << argv[i*2+1] << "\n\n";
 			cout <<"["<< i << "] Getting Sender MAC Address...\n";
 			getMACAddress(handle, senderMac, senderIp, attackerMac, attackerIp);
-			cout <<"["<< i << "]Sender MAC Address: " << string(senderMac) << "\n\n";
-			cout <<"["<< i << "]Getting Target MAC Address...\n";
+			cout <<"["<< i << "] Sender MAC Address: " << string(senderMac) << "\n\n";
+			cout <<"["<< i << "] Getting Target MAC Address...\n";
 			getMACAddress(handle, targetMac, targetIp, attackerMac, attackerIp);
-			cout <<"["<< i << "]Target MAC Address: " << string(targetMac) << "\n";
+			cout <<"["<< i << "] Target MAC Address: " << string(targetMac) << "\n";
 			cout << "\n=============================================\n\n";
-			cout <<"["<< i << "]Starting ARP Spoofing! (Ctrl + c to exit )\n";
-			arpSpoof(handle,senderMac, attackerMac,targetMac,targetIp,senderIp);
+			cout <<"["<< i << "] Starting ARP Spoofing! (Ctrl + c to exit )\n";
+			arpSpoof(i, handle,senderMac, attackerMac,targetMac,targetIp,senderIp);
 		}
 		else {
 			continue;

@@ -30,4 +30,4 @@ void sendARPPacket(pcap_t* handle, Mac& eth_dmac, Mac& eth_smac, Mac& arp_smac, 
 
 void getMACAddress(pcap_t* handle, Mac& senderMac, Ip& senderIp, Mac& attackerMac, Ip& attackerIp);
 
-void arpSpoof(pcap_t* handle, Mac senderMac, Mac attackerMac, Mac targetMac, Ip targetIp, Ip senderIp);
+void arpSpoof(int i, pcap_t* handle, Mac senderMac, Mac attackerMac, Mac targetMac, Ip targetIp, Ip senderIp);

